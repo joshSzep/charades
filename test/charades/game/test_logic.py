@@ -8,7 +8,6 @@ from charades.game.logic import handle_opt_in
 from charades.game.logic import handle_opt_out
 from charades.game.models import GameSession
 from charades.game.models import Player
-from charades.game.models import Word
 from charades.game.schemas import TwilioErrorResponse, TwilioSuccessResponse
 from charades.game.utils import MESSAGES
 
@@ -41,7 +40,7 @@ def active_player(player):
 @pytest.fixture
 def word():
     """Fixture for test word."""
-    return Word.objects.get_or_create(text="test", language="en")[0]
+    return "test"
 
 
 @pytest.mark.django_db

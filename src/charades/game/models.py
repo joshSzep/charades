@@ -71,26 +71,6 @@ class Player(models.Model):
         )
 
 
-class Word(models.Model):
-    text = models.CharField(
-        max_length=100,
-        help_text="The word to be described",
-    )
-    language = models.CharField(
-        max_length=2,
-        help_text="ISO 639-1 language code (e.g., 'es' for Spanish)",
-    )
-
-    def __str__(self) -> str:
-        return f"{self.text} ({self.language})"
-
-    class Meta:
-        unique_together = [
-            "text",
-            "language",
-        ]
-
-
 class GameSession(models.Model):
     STATUS_CHOICES = [
         ("active", "Active"),
@@ -103,10 +83,13 @@ class GameSession(models.Model):
         on_delete=models.CASCADE,
         help_text="Player participating in this game session",
     )
-    word = models.ForeignKey(
-        Word,
-        on_delete=models.PROTECT,
-        help_text="Word assigned for this game session",
+    word = models.CharField(
+        max_length=100,
+        help_text="The word to be described",
+    )
+    language = models.CharField(
+        max_length=2,
+        help_text="ISO 639-1 language code (e.g., 'es' for Spanish)",
     )
     status = models.CharField(
         max_length=10,

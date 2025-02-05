@@ -2,7 +2,6 @@ from django.contrib import admin
 
 from charades.game.models import GameSession
 from charades.game.models import Player
-from charades.game.models import Word
 
 
 @admin.register(Player)
@@ -23,20 +22,6 @@ class PlayerAdmin(admin.ModelAdmin):
         "created_at",
         "opted_in_at",
         "opted_out_at",
-    ]
-
-
-@admin.register(Word)
-class WordAdmin(admin.ModelAdmin):
-    list_display = [
-        "text",
-        "language",
-    ]
-    list_filter = [
-        "language",
-    ]
-    search_fields = [
-        "text",
     ]
 
 
