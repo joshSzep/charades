@@ -2,7 +2,7 @@
 
 ## **Phase 1: Text-Based Gameplay via SMS**
 ### **Functional Requirements**
-- Players receive a word and must describe it using a target language.
+- Players receive a word from OpenAI API and must describe it using a target language.
 - AI evaluates the correctness of the description.
 - SMS-based interaction using Twilio.
 - Scoring system provides feedback on accuracy.
@@ -15,14 +15,14 @@
 ### **Technologies Involved**
 - **Python** (Backend logic)
 - **Twilio SMS API** (Text-based interactions)
-- **OpenAI GPT API** (Natural Language Processing for scoring responses)
+- **OpenAI GPT API** (Word generation and Natural Language Processing for scoring responses)
 - **Django or Flask** (API framework)
 - **PostgreSQL** (Storing game data and user scores)
 
 ### **High-Level Implementation Plan**
 1. Set up a Flask/Django backend to handle SMS messages.
 2. Integrate Twilio SMS API to send and receive game prompts.
-3. Develop a simple AI scoring system using GPT API.
+3. Integrate OpenAI API for word generation and response scoring.
 4. Store session data and scores in PostgreSQL.
 5. Deploy to AWS or a cloud provider with scalability considerations.
 
@@ -134,7 +134,7 @@ Here is a breakdown of **detailed tasks** for each step of the high-level implem
 - [ ] Implement game session management using existing models:
   - [-] Add player opt-in/opt-out state management using Player model
   - [ ] Add game session creation and tracking using GameSession model
-  - [ ] Add word assignment and scoring using Word model
+  - [ ] Add word assignment and scoring using OpenAI API
 - [ ] Establish session management system for tracking player interactions:
   - [-] Design database schema for player opt-in/opt-out status
   - [-] Design database schema for active game sessions
