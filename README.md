@@ -127,12 +127,12 @@ Here is a breakdown of **detailed tasks** for each step of the high-level implem
 
 ### **Step 2: Implement webhook handler for all SMS game interactions**
 - [ ] Implement webhook handler for all SMS game interactions:
-  - [ ] Add "LangGang" command processing for player registration
-  - [ ] Add "STOP" command processing for player opt-out
+  - [-] Add "LangGang" command processing for player registration
+  - [-] Add "STOP" command processing for player opt-out
   - [ ] Add language code processing to start new game sessions
   - [ ] Add description processing for active game sessions
 - [ ] Implement game session management using existing models:
-  - [ ] Add player opt-in/opt-out state management using Player model
+  - [-] Add player opt-in/opt-out state management using Player model
   - [ ] Add game session creation and tracking using GameSession model
   - [ ] Add word assignment and scoring using Word model
 - [ ] Establish session management system for tracking player interactions:
