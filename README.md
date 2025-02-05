@@ -126,27 +126,27 @@ Here is a breakdown of **detailed tasks** for each step of the high-level implem
 - [-] Expose the webhook endpoint to Twilio.
 
 ### **Step 2: Implement webhook handler for all SMS game interactions**
-- [ ] Implement webhook handler for all SMS game interactions:
+- [-] Implement webhook handler for all SMS game interactions:
   - [-] Add "LangGang" command processing for player registration
   - [-] Add "STOP" command processing for player opt-out
-  - [ ] Add language code processing to start new game sessions
-  - [ ] Add description processing for active game sessions
-- [ ] Implement game session management using existing models:
+  - [-] Add language code processing to start new game sessions
+  - [-] Add description processing for active game sessions
+- [-] Implement game session management using existing models:
   - [-] Add player opt-in/opt-out state management using Player model
-  - [ ] Add game session creation and tracking using GameSession model
-  - [ ] Add word assignment and scoring using OpenAI API
-- [ ] Establish session management system for tracking player interactions:
+  - [-] Add game session creation and tracking using GameSession model
+  - [-] Add word assignment and scoring using OpenAI API
+- [-] Establish session management system for tracking player interactions:
   - [-] Design database schema for player opt-in/opt-out status
   - [-] Design database schema for active game sessions
-  - [ ] Implement player description and AI evaluation storage
+  - [-] Implement player description and AI evaluation storage
 - [ ] Deploy a basic server instance on AWS/GCP for initial testing.
 
 ### **Step 3: Develop a simple AI scoring system using GPT API**
-- [ ] Define a scoring rubric based on accuracy, vocabulary, and clarity.
-- [ ] Implement an OpenAI GPT integration for evaluating player responses.
-- [ ] Develop a function to format and send game queries to the AI.
-- [ ] Implement logic for interpreting AI responses and assigning scores.
-- [ ] Store AI feedback and scores in the database.
+- [-] Define a scoring rubric based on accuracy, vocabulary, and clarity.
+- [-] Implement an OpenAI GPT integration for evaluating player responses.
+- [-] Develop a function to format and send game queries to the AI.
+- [-] Implement logic for interpreting AI responses and assigning scores.
+- [-] Store AI feedback and scores in the database.
 
 ### **Step 4: Store session data and scores in PostgreSQL**
 - [ ] Design a PostgreSQL schema for storing player sessions, scores, and game history.
