@@ -77,9 +77,38 @@ def handle_incoming_message(
             code=400,
         )
 
-    # TODO: Implement webhook signature validation
     # TODO: Implement opt-in/opt-out handling
+    # - When the user initiates interaction with the game, they do so by
+    #   sending a message to the game's SMS number with the word "LangGang" (but
+    #   treated case-insensitively) as the body.
+    #   - Example: "LangGang" or "langGang"
+    #   - We must create a record of their opt-in in the database, or update their
+    #     opt-in status if they already have a record.
+    #   - We must send a confirmation message to the user confirming their opt-in and
+    #     requesting to opt out at any time by replying STOP. We also instruct the user
+    #     to send a message with the language code they want to use (e.g. "en" or "ko")
+    #     to start the game.
+    # - When the user sends a message to the game's SMS number with the word
+    #   "STOP" (but treated case-insensitively) as the body:
+    #   - We must end any ongoing game sessions in the database.
+    #   - We must update their opt-out status in the database.
+    #   - We must send a confirmation message to the user confirming their opt-out.
+
     # TODO: Implement game logic
+    # - When the user sends a message to the game's SMS number with the language
+    #   code they want to use (e.g. "en" or "ko") as the body:
+    #   - We must start a new game session for the user in the database.
+    #   - We must send a message to the user with a noun word to describe and instruct
+    #     them on how to play the game.
+    # - When the user sends a message other than "STOP" to the game's SMS number while
+    #   in a game session:
+    #   - We must read their message as a description of the word.
+    #   - We must evaluate the description using the OpenAI GPT model.
+    #   - We must send a message to the user with the AI's evaluation of their
+    #     description.
+    #   - We must update the game session in the database with the user's description,
+    #     the AI's response, and the current state of the game.
+
     return TwilioSuccessResponse(
         message="Message received",
         twiml=(
