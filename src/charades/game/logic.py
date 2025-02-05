@@ -216,3 +216,43 @@ def handle_word_description(
             "twiml": create_twiml_response(f"Failed to evaluate description: {str(e)}"),
             "code": 400,
         }
+
+
+def handle_player_command(
+    phone_number: str,
+    command: str,
+) -> dict:
+    """Route player commands to appropriate handlers.
+
+    This function:
+    1. Handles opt-in/opt-out commands
+    2. For other commands:
+        a. Gets or creates player
+        b. Verifies player is opted in
+        c. Routes to game message handler
+
+    Args:
+        phone_number: The player's phone number in E.164 format
+        command: The command text from the player (lowercase)
+
+    Returns:
+        dict with twiml and code for response
+    """
+    # Handle opt-in/opt-out first
+    if command == "langgang":
+        return handle_opt_in(phone_number)
+    elif command == "optout":
+        return handle_opt_out(phone_number)
+
+    # Get or create player for other commands
+    player, _ = Player.get_or_create_player(phone_number)
+
+    # Check if player is opted in
+    if not player.is_active:
+        return {
+            "twiml": create_twiml_response(MESSAGES["not_opted_in"]),
+            "code": 200,
+        }
+
+    # Handle the game message
+    return handle_game_message(player, command)

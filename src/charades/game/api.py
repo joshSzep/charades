@@ -2,14 +2,10 @@ from urllib.parse import parse_qs
 from django.http import HttpRequest
 from ninja import NinjaAPI
 
-from charades.game.logic import handle_game_message
-from charades.game.logic import handle_opt_in
-from charades.game.logic import handle_opt_out
-from charades.game.models import Player
+from charades.game.logic import handle_player_command
 from charades.game.renderers import TwiMLRenderer
 from charades.game.schemas import TwilioIncomingMessageSchema
 from charades.game.schemas import TwilioMessageStatusSchema
-from charades.game.utils import MESSAGES
 from charades.game.utils import create_twiml_response
 
 api = NinjaAPI(
@@ -87,27 +83,12 @@ def handle_incoming_message(
             "code": 400,
         }
 
-    # Case-insensitive command matching
+    # Extract phone number and command
+    phone_number = message.From
     command = message.Body.strip().lower()
 
-    # Handle opt-in/opt-out first
-    if command == "langgang":
-        return handle_opt_in(message.From)
-    elif command == "optout":
-        return handle_opt_out(message.From)
-    else:
-        # Get or create player
-        player, _ = Player.get_or_create_player(message.From)
-
-        # Check if player is opted in
-        if not player.is_active:
-            return {
-                "twiml": create_twiml_response(MESSAGES["not_opted_in"]),
-                "code": 200,
-            }
-
-        # Handle the game message
-        return handle_game_message(player, command)
+    # Route command to appropriate handler
+    return handle_player_command(phone_number, command)
 
 
 @api.post(
