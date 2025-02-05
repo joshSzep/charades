@@ -1,12 +1,5 @@
-import os
-
-import django
 import pytest
 from django.test import Client
-
-
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "charades.config.settings")
-django.setup()
 
 
 @pytest.fixture
