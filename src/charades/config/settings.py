@@ -84,8 +84,8 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = "config.wsgi.application"
-
+WSGI_APPLICATION = "charades.config.wsgi.application"
+ASGI_APPLICATION = "charades.config.asgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
