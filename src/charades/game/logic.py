@@ -6,22 +6,20 @@ from django.db import transaction
 from charades.game.ai_utils import evaluate_description
 from charades.game.ai_utils import get_random_word
 from charades.game.models import Player
-from charades.game.schemas import TwilioErrorResponse
-from charades.game.schemas import TwilioSuccessResponse
 from charades.game.utils import create_twiml_response
 from charades.game.utils import MESSAGES
 
 
 def handle_opt_in(
     phone_number: str,
-) -> TwilioSuccessResponse | TwilioErrorResponse:
+) -> dict:
     """Handle opt-in request from a user.
 
     Args:
         phone_number: The phone number in E.164 format
 
     Returns:
-        Response with TwiML for success or error
+        dict with twiml and code for response
     """
     try:
         with transaction.atomic():
@@ -29,33 +27,35 @@ def handle_opt_in(
 
             if not created and player.is_active:
                 # Player exists and is already active
-                return TwilioSuccessResponse(
-                    twiml=create_twiml_response(MESSAGES["already_opted_in"]),
-                )
+                return {
+                    "twiml": create_twiml_response(MESSAGES["already_opted_in"]),
+                    "code": 200,
+                }
 
             # Opt in the player (handles both new and existing players)
             player.opt_in()
 
-            return TwilioSuccessResponse(
-                twiml=create_twiml_response(MESSAGES["opt_in_success"]),
-            )
+            return {
+                "twiml": create_twiml_response(MESSAGES["opt_in_success"]),
+                "code": 200,
+            }
     except Exception as e:
-        return TwilioErrorResponse(
-            message=f"Failed to opt in: {str(e)}",
-            code=400,
-        )
+        return {
+            "twiml": create_twiml_response(f"Failed to opt in: {str(e)}"),
+            "code": 400,
+        }
 
 
 def handle_opt_out(
     phone_number: str,
-) -> TwilioSuccessResponse | TwilioErrorResponse:
+) -> dict:
     """Handle opt-out request from a user.
 
     Args:
         phone_number: The phone number in E.164 format
 
     Returns:
-        Response with TwiML for success or error
+        dict with twiml and code for response
     """
     try:
         with transaction.atomic():
@@ -67,20 +67,21 @@ def handle_opt_out(
             # Opt out the player
             player.opt_out()
 
-            return TwilioSuccessResponse(
-                twiml=create_twiml_response(MESSAGES["opt_out_success"]),
-            )
+            return {
+                "twiml": create_twiml_response(MESSAGES["opt_out_success"]),
+                "code": 200,
+            }
     except Exception as e:
-        return TwilioErrorResponse(
-            message=f"Failed to opt out: {str(e)}",
-            code=400,
-        )
+        return {
+            "twiml": create_twiml_response(f"Failed to opt out: {str(e)}"),
+            "code": 400,
+        }
 
 
 def handle_game_message(
     player: Player,
     message: str,
-) -> TwilioSuccessResponse | TwilioErrorResponse:
+) -> dict:
     """Handle a game-related message from a player.
 
     This function:
@@ -94,7 +95,7 @@ def handle_game_message(
         message: The message from the player
 
     Returns:
-        Response with appropriate TwiML
+        dict with twiml and code for response
     """
     try:
         # Check for active game session
@@ -109,21 +110,22 @@ def handle_game_message(
             return handle_language_selection(player, message)
 
         # Neither - provide guidance
-        return TwilioSuccessResponse(
-            twiml=create_twiml_response(MESSAGES["how_to_play"]),
-        )
+        return {
+            "twiml": create_twiml_response(MESSAGES["how_to_play"]),
+            "code": 200,
+        }
 
     except Exception as e:
-        return TwilioErrorResponse(
-            message=f"Failed to process message: {str(e)}",
-            code=400,
-        )
+        return {
+            "twiml": create_twiml_response(f"Failed to process message: {str(e)}"),
+            "code": 400,
+        }
 
 
 def handle_language_selection(
     player: Player,
     language_code: str,
-) -> TwilioSuccessResponse | TwilioErrorResponse:
+) -> dict:
     """Handle language selection from a player.
 
     Args:
@@ -131,7 +133,7 @@ def handle_language_selection(
         language_code: Two-letter ISO 639-1 language code (e.g. 'EN', 'KO')
 
     Returns:
-        Response with TwiML containing the word to describe
+        dict with twiml and code for response
     """
     try:
         with transaction.atomic():
@@ -147,25 +149,26 @@ def handle_language_selection(
                 language=language_code.lower(),
             )
 
-            return TwilioSuccessResponse(
-                twiml=create_twiml_response(
+            return {
+                "twiml": create_twiml_response(
                     MESSAGES["new_game"].format(
                         language=settings.SUPPORTED_LANGUAGES[language_code.upper()],
                         word=word,
                     ),
                 ),
-            )
+                "code": 200,
+            }
     except Exception as e:
-        return TwilioErrorResponse(
-            message=f"Failed to start game: {str(e)}",
-            code=400,
-        )
+        return {
+            "twiml": create_twiml_response(f"Failed to start game: {str(e)}"),
+            "code": 400,
+        }
 
 
 def handle_word_description(
     player: Player,
     description: str,
-) -> TwilioSuccessResponse | TwilioErrorResponse:
+) -> dict:
     """Handle a player's attempt to describe their word.
 
     Args:
@@ -173,16 +176,17 @@ def handle_word_description(
         description: The player's description of their word
 
     Returns:
-        Response with TwiML containing the score and feedback
+        dict with twiml and code for response
     """
     try:
         with transaction.atomic():
             # Get active session
             session = player.gamesession_set.filter(status="active").first()
             if not session:
-                return TwilioSuccessResponse(
-                    twiml=create_twiml_response(MESSAGES["no_active_game"]),
-                )
+                return {
+                    "twiml": create_twiml_response(MESSAGES["no_active_game"]),
+                    "code": 200,
+                }
 
             # Evaluate description using OpenAI
             score, feedback = evaluate_description(
@@ -198,16 +202,17 @@ def handle_word_description(
                 feedback=feedback,
             )
 
-            return TwilioSuccessResponse(
-                twiml=create_twiml_response(
+            return {
+                "twiml": create_twiml_response(
                     MESSAGES["game_complete"].format(
                         score=score,
                         feedback=feedback,
                     ),
                 ),
-            )
+                "code": 200,
+            }
     except Exception as e:
-        return TwilioErrorResponse(
-            message=f"Failed to evaluate description: {str(e)}",
-            code=400,
-        )
+        return {
+            "twiml": create_twiml_response(f"Failed to evaluate description: {str(e)}"),
+            "code": 400,
+        }

@@ -1,18 +1,20 @@
 from urllib.parse import parse_qs
-
+from django.http import HttpRequest
 from ninja import NinjaAPI
 
 from charades.game.logic import handle_game_message
 from charades.game.logic import handle_opt_in
 from charades.game.logic import handle_opt_out
 from charades.game.models import Player
-from charades.game.schemas import TwilioErrorResponse
+from charades.game.renderers import TwiMLRenderer
 from charades.game.schemas import TwilioIncomingMessageSchema
 from charades.game.schemas import TwilioMessageStatusSchema
-from charades.game.schemas import TwilioSuccessResponse
-from charades.game.utils import MESSAGES, create_twiml_response
+from charades.game.utils import MESSAGES
+from charades.game.utils import create_twiml_response
 
-api = NinjaAPI()
+api = NinjaAPI(
+    renderer=TwiMLRenderer(),
+)
 
 
 @api.get("/hello")
@@ -22,15 +24,11 @@ def hello(request):
 
 @api.post(
     "/webhooks/twilio/incoming",
-    response={
-        200: TwilioSuccessResponse,
-        400: TwilioErrorResponse,
-    },
     tags=["webhooks"],
 )
 def handle_incoming_message(
-    request,
-) -> TwilioSuccessResponse | TwilioErrorResponse:
+    request: HttpRequest,
+) -> dict:
     """Handle incoming SMS messages from Twilio.
 
     This endpoint:
@@ -77,17 +75,17 @@ def handle_incoming_message(
     try:
         message = TwilioIncomingMessageSchema(**schema_data)
     except ValueError as e:
-        return TwilioErrorResponse(
-            message=f"Invalid webhook payload: {str(e)}",
-            code=400,
-        )
+        return {
+            "twiml": create_twiml_response(f"Invalid webhook payload: {str(e)}"),
+            "code": 400,
+        }
 
     # Handle messages without a body
     if not message.Body:
-        return TwilioErrorResponse(
-            message="Message body is required",
-            code=400,
-        )
+        return {
+            "twiml": create_twiml_response("Message body is required"),
+            "code": 400,
+        }
 
     # Case-insensitive command matching
     command = message.Body.strip().lower()
@@ -97,32 +95,29 @@ def handle_incoming_message(
         return handle_opt_in(message.From)
     elif command == "optout":
         return handle_opt_out(message.From)
+    else:
+        # Get or create player
+        player, _ = Player.get_or_create_player(message.From)
 
-    # Get or create player
-    player, _ = Player.get_or_create_player(message.From)
+        # Check if player is opted in
+        if not player.is_active:
+            return {
+                "twiml": create_twiml_response(MESSAGES["not_opted_in"]),
+                "code": 200,
+            }
 
-    # Check if player is opted in
-    if not player.is_active:
-        return TwilioSuccessResponse(
-            twiml=create_twiml_response(MESSAGES["not_opted_in"]),
-        )
-
-    # Handle game-related message
-    return handle_game_message(player, command)
+        # Handle the game message
+        return handle_game_message(player, command)
 
 
 @api.post(
     "/webhooks/twilio/status",
-    response={
-        200: dict,
-        400: TwilioErrorResponse,
-    },
     tags=["webhooks"],
 )
 def handle_message_status(
-    request,
+    request: HttpRequest,
     payload: TwilioMessageStatusSchema,
-) -> dict | TwilioErrorResponse:
+) -> dict:
     """Handle message status callbacks from Twilio.
 
     This endpoint:
@@ -130,7 +125,8 @@ def handle_message_status(
     2. Records message delivery status
     3. Handles failed message retries if needed
     """
-    # TODO: Implement webhook signature validation
-    # TODO: Implement status logging
-    # TODO: Implement retry logic for failed messages
-    return {"status": "received"}
+    # For now, just acknowledge receipt
+    return {
+        "twiml": create_twiml_response("Status received"),
+        "code": 200,
+    }
