@@ -9,18 +9,21 @@ class TwilioIncomingMessageSchema(Schema):
     # Core message fields
     MessageSid: str
     AccountSid: str
-    From: str  # Phone number that sent the message
-    To: str  # Your Twilio phone number
-    Body: str  # Message content
-    NumMedia: int = 0  # Number of media attachments
+    From: str
+    To: str
+    Body: str | None = None  # Can be empty for media-only messages
 
     # Message details
-    MessagingServiceSid: str | None = None
-    NumSegments: int = 1  # Number of segments for long messages
-    SmsStatus: Literal["received"] = "received"
+    NumMedia: str = "0"  # Twilio sends this as a string
+    NumSegments: str = "1"  # Twilio sends this as a string
+    SmsMessageSid: str
     SmsSid: str
+    SmsStatus: str | None = None
 
-    # Optional media fields (only present when NumMedia > 0)
+    # Service identifiers
+    MessagingServiceSid: str | None = None
+
+    # Media fields (present when NumMedia > 0)
     MediaContentType0: str | None = None
     MediaUrl0: str | None = None
 
@@ -33,6 +36,10 @@ class TwilioIncomingMessageSchema(Schema):
     ToState: str | None = None
     ToZip: str | None = None
     ToCountry: str | None = None
+
+    # Additional optional fields
+    ApiVersion: str | None = None
+    ProfileName: str | None = None  # For channels that support sender profiles
 
 
 class TwilioMessageStatusSchema(Schema):
