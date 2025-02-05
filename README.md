@@ -122,16 +122,24 @@ Here is a breakdown of **detailed tasks** for each step of the high-level implem
 ### **Step 1: Set up a Flask/Django backend to handle SMS messages**
 - [-] Initialize a new Flask/Django project with a structured directory.
 - [-] Configure environment variables for API keys (Twilio, OpenAI GPT, database credentials).
-- [ ] Implement a RESTful API with endpoints for game session management.
-- [ ] Establish a session management system for tracking player interactions.
-- [ ] Deploy a basic server instance on AWS/GCP for initial testing.
+- [-] Implement a stub webhook endpoint for incoming SMS messages.
+- [-] Expose the webhook endpoint to Twilio.
 
-### **Step 2: Integrate Twilio SMS API to send and receive game prompts**
-- [ ] Set up a Twilio account and configure an SMS-enabled phone number.
-- [ ] Implement an API endpoint to receive inbound SMS messages.
-- [ ] Develop a function to send SMS game prompts based on game state.
-- [ ] Implement message parsing logic to recognize player responses.
-- [ ] Ensure Twilio webhook callbacks trigger the backend for immediate processing.
+### **Step 2: Implement webhook handler for all SMS game interactions**
+- [ ] Implement webhook handler for all SMS game interactions:
+  - [ ] Add "LangGang" command processing for player registration
+  - [ ] Add "STOP" command processing for player opt-out
+  - [ ] Add language code processing to start new game sessions
+  - [ ] Add description processing for active game sessions
+- [ ] Implement game session management using existing models:
+  - [ ] Add player opt-in/opt-out state management using Player model
+  - [ ] Add game session creation and tracking using GameSession model
+  - [ ] Add word assignment and scoring using Word model
+- [ ] Establish session management system for tracking player interactions:
+  - [-] Design database schema for player opt-in/opt-out status
+  - [-] Design database schema for active game sessions
+  - [ ] Implement player description and AI evaluation storage
+- [ ] Deploy a basic server instance on AWS/GCP for initial testing.
 
 ### **Step 3: Develop a simple AI scoring system using GPT API**
 - [ ] Define a scoring rubric based on accuracy, vocabulary, and clarity.
