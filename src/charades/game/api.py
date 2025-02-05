@@ -96,7 +96,6 @@ def handle_incoming_message(
 )
 def handle_message_status(
     request: HttpRequest,
-    payload: TwilioMessageStatusSchema,
 ) -> dict:
     """Handle message status callbacks from Twilio.
 
@@ -105,6 +104,38 @@ def handle_message_status(
     2. Records message delivery status
     3. Handles failed message retries if needed
     """
+    # Parse the URL-encoded payload from request.body
+    body_str = request.body.decode("utf-8")
+    params = parse_qs(body_str)
+
+    # Convert the parsed params into our schema format
+    # Note: parse_qs returns lists, so we take first item for each key
+    schema_data = {
+        "MessageSid": params["MessageSid"][0],
+        "MessageStatus": params["MessageStatus"][0],
+        "AccountSid": params["AccountSid"][0],
+        "From": params["From"][0],
+        "To": params["To"][0],
+        # Error fields
+        "ErrorCode": int(params["ErrorCode"][0]) if "ErrorCode" in params else None,
+        "ErrorMessage": params.get("ErrorMessage", [None])[0],
+        # Optional fields
+        "ApiVersion": params.get("ApiVersion", [None])[0],
+        "ChannelToAddress": params.get("ChannelToAddress", [None])[0],
+        "ChannelPrefix": params.get("ChannelPrefix", [None])[0],
+        "SmsSid": params.get("SmsSid", [None])[0],
+        "SmsStatus": params.get("SmsStatus", [None])[0],
+    }
+
+    # Create and validate the schema
+    try:
+        _ = TwilioMessageStatusSchema(**schema_data)
+    except ValueError as e:
+        return {
+            "twiml": create_twiml_response(f"Invalid webhook payload: {str(e)}"),
+            "code": 400,
+        }
+
     # For now, just acknowledge receipt
     return {
         "twiml": create_twiml_response("Status received"),
