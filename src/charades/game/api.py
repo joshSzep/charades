@@ -7,7 +7,10 @@ from charades.game.renderers import TwiMLRenderer
 from charades.game.schemas import TwilioIncomingMessageSchema
 from charades.game.schemas import TwilioMessageStatusSchema
 from charades.game.schemas import PlayerCommandSchema
+from charades.game.schemas import TwilioIncomingVoiceSchema
 from charades.game.utils import create_twiml_response
+from charades.game.utils import create_voice_response
+from charades.game.utils import VOICE_MESSAGES
 
 api = NinjaAPI(
     renderer=TwiMLRenderer(),
@@ -106,6 +109,143 @@ def handle_message_status(
     return {
         "twiml": create_twiml_response("Status received"),
         "code": 200,
+    }
+
+
+@api.post(
+    "/webhooks/twilio/voice",
+    tags=["webhooks"],
+)
+def handle_voice_call(
+    request: HttpRequest,
+) -> dict:
+    """Handle incoming voice calls from Twilio.
+
+    This endpoint:
+    1. Validates the incoming webhook payload
+    2. Greets the caller
+    3. Prompts for language selection
+    4. Gathers speech input
+    """
+    # Parse the URL-encoded payload from request.body
+    body_str = request.body.decode("utf-8")
+    params = parse_qs(body_str)
+
+    # Convert the parsed params into our schema format
+    schema_data = {
+        "CallSid": params["CallSid"][0],
+        "AccountSid": params["AccountSid"][0],
+        "From": params["From"][0],
+        "To": params["To"][0],
+        "CallStatus": params["CallStatus"][0],
+        # Optional fields
+        "FromCity": params.get("FromCity", [None])[0],
+        "FromState": params.get("FromState", [None])[0],
+        "FromZip": params.get("FromZip", [None])[0],
+        "FromCountry": params.get("FromCountry", [None])[0],
+        "ToCity": params.get("ToCity", [None])[0],
+        "ToState": params.get("ToState", [None])[0],
+        "ToZip": params.get("ToZip", [None])[0],
+        "ToCountry": params.get("ToCountry", [None])[0],
+        "ApiVersion": params.get("ApiVersion", [None])[0],
+        "Direction": params.get("Direction", [None])[0],
+        "ForwardedFrom": params.get("ForwardedFrom", [None])[0],
+    }
+
+    # Create and validate the schema
+    try:
+        _ = TwilioIncomingVoiceSchema(**schema_data)
+    except ValueError as e:
+        return {
+            "twiml": create_voice_response(f"Invalid webhook payload: {str(e)}"),
+            "code": 400,
+        }
+
+    return {
+        "twiml": create_voice_response(
+            VOICE_MESSAGES["welcome"],
+            gather_speech=True,
+        ),
+        "code": 200,
+    }
+
+
+@api.post(
+    "/webhooks/twilio/voice/gather",
+    tags=["webhooks"],
+)
+def handle_voice_gather(
+    request: HttpRequest,
+) -> dict:
+    """Handle gathered speech input from voice calls.
+
+    This endpoint:
+    1. Validates the incoming webhook payload
+    2. Processes the speech recognition result
+    3. Routes to appropriate game logic
+    4. Returns TwiML response with next prompt
+    """
+    # Parse the URL-encoded payload from request.body
+    body_str = request.body.decode("utf-8")
+    params = parse_qs(body_str)
+
+    # Convert the parsed params into our schema format
+    schema_data = {
+        "CallSid": params["CallSid"][0],
+        "AccountSid": params["AccountSid"][0],
+        "From": params["From"][0],
+        "To": params["To"][0],
+        "CallStatus": params["CallStatus"][0],
+        "SpeechResult": params.get("SpeechResult", [None])[0],
+        "Confidence": float(params["Confidence"][0])
+        if "Confidence" in params
+        else None,
+        # Optional fields
+        "FromCity": params.get("FromCity", [None])[0],
+        "FromState": params.get("FromState", [None])[0],
+        "FromZip": params.get("FromZip", [None])[0],
+        "FromCountry": params.get("FromCountry", [None])[0],
+        "ToCity": params.get("ToCity", [None])[0],
+        "ToState": params.get("ToState", [None])[0],
+        "ToZip": params.get("ToZip", [None])[0],
+        "ToCountry": params.get("ToCountry", [None])[0],
+        "ApiVersion": params.get("ApiVersion", [None])[0],
+        "Direction": params.get("Direction", [None])[0],
+        "ForwardedFrom": params.get("ForwardedFrom", [None])[0],
+    }
+
+    # Create and validate the schema
+    try:
+        call = TwilioIncomingVoiceSchema(**schema_data)
+    except ValueError as e:
+        return {
+            "twiml": create_voice_response(f"Invalid webhook payload: {str(e)}"),
+            "code": 400,
+        }
+
+    if not call.SpeechResult:
+        return {
+            "twiml": create_voice_response(
+                VOICE_MESSAGES["no_input"],
+                gather_speech=True,
+            ),
+            "code": 200,
+        }
+
+    # Process the command through existing game logic
+    result = handle_player_command(call.From, call.SpeechResult.lower())
+
+    # Convert message response to voice response
+    message = result["twiml"]
+    if "message" in message:
+        message = message.split(">")[1].split("<")[0]  # Extract message from TwiML
+
+    return {
+        "twiml": create_voice_response(
+            message,
+            gather_speech=True,
+        ),
+        "code": result["code"],
     }
 
 
