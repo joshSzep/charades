@@ -28,7 +28,7 @@ jobs:
           uv pip install -e ".[dev]"
       
       - name: Run Django migrations
-        run: cd src/charades && uv run python manage.py migrate && cd ../..
+        run: uv run python manage.py migrate
 
       - name: Run ruff format check
         run: uv run ruff format --check

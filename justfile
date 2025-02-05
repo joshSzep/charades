@@ -12,23 +12,23 @@ pyright:
 
 # Run Django development server
 django-runserver:
-    cd src/charades && uv run python manage.py runserver
+    uv run python manage.py runserver
 
 # Run Django migrations
 django-migrate:
-    cd src/charades && uv run python manage.py migrate
+    uv run python manage.py migrate
 
 # Make Django migrations
 django-makemigrations:
-    cd src/charades && uv run python manage.py makemigrations
+    uv run python manage.py makemigrations
 
 # Create a Django superuser
 django-createsuperuser:
-    cd src/charades && uv run python manage.py createsuperuser
+    uv run python manage.py createsuperuser
 
 # Run Django shell
 django-shell:
-    cd src/charades && uv run python manage.py shell
+    uv run python manage.py shell
 
 # Clean Python cache files
 clean:
