@@ -6,16 +6,12 @@ from charades.game.logic import handle_player_command
 from charades.game.renderers import TwiMLRenderer
 from charades.game.schemas import TwilioIncomingMessageSchema
 from charades.game.schemas import TwilioMessageStatusSchema
+from charades.game.schemas import PlayerCommandSchema
 from charades.game.utils import create_twiml_response
 
 api = NinjaAPI(
     renderer=TwiMLRenderer(),
 )
-
-
-@api.get("/hello")
-def hello(request):
-    return {"message": "Hello, welcome to AI Language Charades!"}
 
 
 @api.post(
@@ -111,3 +107,23 @@ def handle_message_status(
         "twiml": create_twiml_response("Status received"),
         "code": 200,
     }
+
+
+@api.post(
+    "/test/player-command",
+    tags=["testing"],
+)
+def test_player_command(
+    request: HttpRequest,
+    payload: PlayerCommandSchema,
+) -> dict:
+    """Test endpoint to directly invoke handle_player_command.
+
+    This endpoint allows testing the game logic without Twilio webhooks.
+    It expects a phone number and command, and returns the same response
+    format as the Twilio webhooks.
+    """
+    return handle_player_command(
+        phone_number=payload.phone_number,
+        command=payload.command,
+    )

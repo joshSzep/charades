@@ -71,3 +71,10 @@ class TwilioMessageStatusSchema(Schema):
     ChannelPrefix: str | None = None
     SmsSid: str | None = None
     SmsStatus: str | None = None
+
+
+class PlayerCommandSchema(Schema):
+    """Schema for testing player commands directly without Twilio."""
+
+    phone_number: str
+    command: str

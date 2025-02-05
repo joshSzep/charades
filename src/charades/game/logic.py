@@ -238,6 +238,9 @@ def handle_player_command(
     Returns:
         dict with twiml and code for response
     """
+    # Normalize command
+    command = command.strip().lower()
+
     # Handle opt-in/opt-out first
     if command == "langgang":
         return handle_opt_in(phone_number)
