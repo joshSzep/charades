@@ -1,3 +1,5 @@
+from urllib.parse import parse_qs
+
 from ninja import NinjaAPI
 
 from charades.game.schemas import TwilioErrorResponse
@@ -23,7 +25,6 @@ def hello(request):
 )
 def handle_incoming_message(
     request,
-    payload: TwilioIncomingMessageSchema,
 ) -> TwilioSuccessResponse | TwilioErrorResponse:
     """Handle incoming SMS messages from Twilio.
 
@@ -33,6 +34,49 @@ def handle_incoming_message(
     3. Handles game interactions (word descriptions)
     4. Returns TwiML response to Twilio
     """
+    # Parse the URL-encoded payload from request.body
+    body_str = request.body.decode("utf-8")
+    params = parse_qs(body_str)
+
+    # Convert the parsed params into our schema format
+    # Note: parse_qs returns lists, so we take first item for each key
+    schema_data = {
+        "MessageSid": params["MessageSid"][0],
+        "AccountSid": params["AccountSid"][0],
+        "From": params["From"][0],
+        "To": params["To"][0],
+        "Body": params.get("Body", [None])[0],
+        "NumMedia": params.get("NumMedia", ["0"])[0],
+        "NumSegments": params.get("NumSegments", ["1"])[0],
+        "SmsMessageSid": params["SmsMessageSid"][0],
+        "SmsSid": params["SmsSid"][0],
+        "SmsStatus": params.get("SmsStatus", [None])[0],
+        "MessagingServiceSid": params.get("MessagingServiceSid", [None])[0],
+        # Media fields
+        "MediaContentType0": params.get("MediaContentType0", [None])[0],
+        "MediaUrl0": params.get("MediaUrl0", [None])[0],
+        # Geographic data
+        "FromCity": params.get("FromCity", [None])[0],
+        "FromState": params.get("FromState", [None])[0],
+        "FromZip": params.get("FromZip", [None])[0],
+        "FromCountry": params.get("FromCountry", [None])[0],
+        "ToCity": params.get("ToCity", [None])[0],
+        "ToState": params.get("ToState", [None])[0],
+        "ToZip": params.get("ToZip", [None])[0],
+        "ToCountry": params.get("ToCountry", [None])[0],
+        # Additional fields
+        "ApiVersion": params.get("ApiVersion", [None])[0],
+    }
+
+    # Create and validate the schema
+    try:
+        _ = TwilioIncomingMessageSchema(**schema_data)
+    except ValueError as e:
+        return TwilioErrorResponse(
+            message=f"Invalid webhook payload: {str(e)}",
+            code=400,
+        )
+
     # TODO: Implement webhook signature validation
     # TODO: Implement opt-in/opt-out handling
     # TODO: Implement game logic
