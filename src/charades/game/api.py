@@ -2,12 +2,15 @@ from urllib.parse import parse_qs
 
 from ninja import NinjaAPI
 
+from charades.game.logic import handle_game_message
 from charades.game.logic import handle_opt_in
 from charades.game.logic import handle_opt_out
+from charades.game.models import Player
 from charades.game.schemas import TwilioErrorResponse
 from charades.game.schemas import TwilioIncomingMessageSchema
 from charades.game.schemas import TwilioMessageStatusSchema
 from charades.game.schemas import TwilioSuccessResponse
+from charades.game.utils import MESSAGES, create_twiml_response
 
 api = NinjaAPI()
 
@@ -33,7 +36,7 @@ def handle_incoming_message(
     This endpoint:
     1. Validates the incoming webhook payload
     2. Processes opt-in/opt-out commands
-    3. Handles game interactions (word descriptions)
+    3. Handles game interactions (language selection and word descriptions)
     4. Returns TwiML response to Twilio
     """
     # Parse the URL-encoded payload from request.body
@@ -89,17 +92,23 @@ def handle_incoming_message(
     # Case-insensitive command matching
     command = message.Body.strip().lower()
 
-    # Handle opt-in/opt-out
+    # Handle opt-in/opt-out first
     if command == "langgang":
         return handle_opt_in(message.From)
     elif command == "optout":
         return handle_opt_out(message.From)
 
-    # TODO: Implement game logic for language selection and word description
-    return TwilioErrorResponse(
-        message="Game logic not yet implemented",
-        code=400,
-    )
+    # Get or create player
+    player, _ = Player.get_or_create_player(message.From)
+
+    # Check if player is opted in
+    if not player.is_active:
+        return TwilioSuccessResponse(
+            twiml=create_twiml_response(MESSAGES["not_opted_in"]),
+        )
+
+    # Handle game-related message
+    return handle_game_message(player, command)
 
 
 @api.post(
