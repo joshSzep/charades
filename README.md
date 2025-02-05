@@ -2,7 +2,7 @@
 
 ## **Phase 1: Text-Based Gameplay via SMS**
 ### **Functional Requirements**
-- Players receive a word from OpenAI API and must describe it using a target language.
+- Players receive a word from OpenAI API (with Anthropic API as fallback) and must describe it using a target language.
 - AI evaluates the correctness of the description.
 - SMS-based interaction using Twilio.
 - Scoring system provides feedback on accuracy.
@@ -15,7 +15,8 @@
 ### **Technologies Involved**
 - **Python** (Backend logic)
 - **Twilio SMS API** (Text-based interactions)
-- **OpenAI GPT API** (Word generation and Natural Language Processing for scoring responses)
+- **OpenAI GPT API** (Primary API for word generation and NLP scoring)
+- **Anthropic Claude API** (Fallback API for word generation and NLP scoring)
 - **Django or Flask** (API framework)
 - **PostgreSQL** (Storing game data and user scores)
 
@@ -121,7 +122,7 @@ Here is a breakdown of **detailed tasks** for each step of the high-level implem
 
 ### **Step 1: Set up a Flask/Django backend to handle SMS messages**
 - [-] Initialize a new Flask/Django project with a structured directory.
-- [-] Configure environment variables for API keys (Twilio, OpenAI GPT, database credentials).
+- [-] Configure environment variables for API keys (Twilio, OpenAI GPT, Anthropic Claude, database credentials).
 - [-] Implement a stub webhook endpoint for incoming SMS messages.
 - [-] Expose the webhook endpoint to Twilio.
 
@@ -134,7 +135,7 @@ Here is a breakdown of **detailed tasks** for each step of the high-level implem
 - [-] Implement game session management using existing models:
   - [-] Add player opt-in/opt-out state management using Player model
   - [-] Add game session creation and tracking using GameSession model
-  - [-] Add word assignment and scoring using OpenAI API
+  - [-] Add word assignment and scoring using OpenAI API (with Anthropic API as fallback)
 - [-] Establish session management system for tracking player interactions:
   - [-] Design database schema for player opt-in/opt-out status
   - [-] Design database schema for active game sessions
@@ -144,13 +145,14 @@ Here is a breakdown of **detailed tasks** for each step of the high-level implem
 ### **Step 3: Develop a simple AI scoring system using GPT API**
 - [-] Define a scoring rubric based on accuracy, vocabulary, and clarity.
 - [-] Implement an OpenAI GPT integration for evaluating player responses.
+- [-] Implement an Anthropic Claude integration as fallback for evaluating player responses.
 - [-] Develop a function to format and send game queries to the AI.
 - [-] Implement logic for interpreting AI responses and assigning scores.
 - [-] Store AI feedback and scores in the database.
 
 ### **Step 4: Store session data and scores in PostgreSQL**
-- [ ] Design a PostgreSQL schema for storing player sessions, scores, and game history.
-- [ ] Implement Django ORM or SQLAlchemy models for database interaction.
+- [-] Design a PostgreSQL schema for storing player sessions, scores, and game history.
+- [-] Implement Django ORM or SQLAlchemy models for database interaction.
 - [ ] Develop CRUD operations for player and game session management.
 - [ ] Set up database connection pooling for efficiency.
 - [ ] Implement automated daily backups for database integrity.
