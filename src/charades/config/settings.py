@@ -43,6 +43,23 @@ TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER", "")
 # OpenAI settings (for future use)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
+# Game settings
+SUPPORTED_LANGUAGES = {
+    "BN": "Bengali",
+    "DE": "German",
+    "EN": "English",
+    "ES": "Spanish",
+    "FA": "Persian",
+    "FR": "French",
+    "IT": "Italian",
+    "JA": "Japanese",
+    "KO": "Korean",
+    "PT": "Portuguese",
+    "RU": "Russian",
+    "ZH": "Chinese",
+}
+
+
 # Application definition
 
 INSTALLED_APPS = [

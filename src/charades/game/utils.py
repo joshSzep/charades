@@ -26,7 +26,7 @@ MESSAGES = {
     ),
     "opt_out_success": (
         "You've been successfully opted out of LangGang Charades. "
-        "Thanks for playing! Text LANG to opt back in anytime."
+        "Thanks for playing! Text LANGGANG to opt back in anytime."
     ),
     "already_opted_in": (
         "You're already opted in to LangGang Charades! "
@@ -34,4 +34,35 @@ MESSAGES = {
         "Or reply OPTOUT to opt out."
     ),
     "error_generic": ("Sorry, something went wrong. Please try again later."),
+    "how_to_play": (
+        "To play LangGang Charades:\n"
+        "1. Send a 2-letter language code to start a game:\n"
+        "   - EN (English)\n"
+        "   - KO (Korean)\n"
+        "2. I'll give you a word to describe\n"
+        "3. Send your description and I'll evaluate it!\n\n"
+        "Or reply OPTOUT to stop playing."
+    ),
+    "not_opted_in": (
+        "You're not currently opted in to LangGang Charades. "
+        "Text LANGGANG to start playing!"
+    ),
+    "new_game": (
+        "Let's play in {language}! 🎮\n"
+        "Your word is: {word}\n"
+        "Please describe this word in {language}. I'll evaluate your description!"
+    ),
+    "no_active_game": (
+        "You don't have an active game! Send a language code "
+        "(e.g. EN for English or KO for Korean) to start playing."
+    ),
+    "game_complete": (
+        "Score: {score}/100 🎯\n"
+        "Feedback: {feedback}\n\n"
+        "Send a language code to play again!"
+    ),
+    "invalid_language": (
+        "Sorry, that language code isn't supported yet. "
+        "Try: EN (English) or KO (Korean)"
+    ),
 }
