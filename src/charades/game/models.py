@@ -5,6 +5,9 @@ from django.utils import timezone
 
 
 class Player(models.Model):
+    # Reverse relationship to GameSession
+    gamesession_set: "models.Manager[GameSession]"
+
     phone_number = models.CharField(
         max_length=20,
         unique=True,
@@ -45,6 +48,28 @@ class Player(models.Model):
         self.opted_out_at = timezone.now()
         self.save()
 
+    @classmethod
+    def get_or_create_player(
+        cls,
+        phone_number: str,
+    ) -> tuple["Player", bool]:
+        """Get or create a player with the given phone number.
+
+        Args:
+            phone_number: The phone number in E.164 format
+
+        Returns:
+            tuple: (Player instance, bool indicating if player was created)
+        """
+        return cls.objects.get_or_create(phone_number=phone_number)
+
+    def end_active_sessions(self) -> None:
+        """End all active game sessions for this player."""
+        self.gamesession_set.filter(status="active").update(
+            status="timeout",
+            completed_at=timezone.now(),
+        )
+
 
 class Word(models.Model):
     text = models.CharField(
@@ -60,7 +85,10 @@ class Word(models.Model):
         return f"{self.text} ({self.language})"
 
     class Meta:
-        unique_together = ["text", "language"]
+        unique_together = [
+            "text",
+            "language",
+        ]
 
 
 class GameSession(models.Model):
@@ -105,7 +133,10 @@ class GameSession(models.Model):
     def __str__(self) -> str:
         return f"{self.player} - {self.word} ({self.status})"
 
-    def complete(self, score: int) -> None:
+    def complete(
+        self,
+        score: int,
+    ) -> None:
         """Mark the game session as completed with a score."""
         self.status = "completed"
         self.completed_at = timezone.now()
