@@ -92,7 +92,7 @@ def handle_incoming_message(
     # Handle opt-in/opt-out
     if command == "langgang":
         return handle_opt_in(message.From)
-    elif command == "stop":
+    elif command == "optout":
         return handle_opt_out(message.From)
 
     # TODO: Implement game logic for language selection and word description
