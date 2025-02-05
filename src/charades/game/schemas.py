@@ -71,17 +71,3 @@ class TwilioMessageStatusSchema(Schema):
     ChannelPrefix: str | None = None
     SmsSid: str | None = None
     SmsStatus: str | None = None
-
-
-class TwilioErrorResponse(Schema):
-    """Schema for error responses we send back to Twilio."""
-
-    message: str
-    code: int = 400
-
-
-class TwilioSuccessResponse(Schema):
-    """Schema for TwiML responses we send back to Twilio."""
-
-    message: str | None = None
-    twiml: str

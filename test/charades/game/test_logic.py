@@ -3,13 +3,17 @@
 from unittest.mock import patch
 
 import pytest
+from django.conf import settings
 
+from charades.game.logic import handle_game_message
+from charades.game.logic import handle_language_selection
 from charades.game.logic import handle_opt_in
 from charades.game.logic import handle_opt_out
+from charades.game.logic import handle_word_description
 from charades.game.models import GameSession
 from charades.game.models import Player
-from charades.game.schemas import TwilioErrorResponse, TwilioSuccessResponse
 from charades.game.utils import MESSAGES
+from charades.game.utils import create_twiml_response
 
 
 @pytest.fixture
@@ -43,6 +47,17 @@ def word():
     return "test"
 
 
+@pytest.fixture
+def active_game_session(active_player, word):
+    """Fixture for active game session."""
+    return GameSession.objects.create(
+        player=active_player,
+        word=word,
+        language="en",
+        status="active",
+    )
+
+
 @pytest.mark.django_db
 class TestOptInLogic:
     """Tests for opt-in logic."""
@@ -52,9 +67,8 @@ class TestOptInLogic:
         response = handle_opt_in(phone_number)
 
         # Check response
-        assert isinstance(response, TwilioSuccessResponse)
-        assert response.twiml
-        assert MESSAGES["opt_in_success"] in response.twiml
+        assert response["code"] == 200
+        assert response["twiml"] == create_twiml_response(MESSAGES["opt_in_success"])
 
         # Check database
         player = Player.objects.get(phone_number=phone_number)
@@ -68,9 +82,8 @@ class TestOptInLogic:
         response = handle_opt_in(player.phone_number)
 
         # Check response
-        assert isinstance(response, TwilioSuccessResponse)
-        assert response.twiml
-        assert MESSAGES["opt_in_success"] in response.twiml
+        assert response["code"] == 200
+        assert response["twiml"] == create_twiml_response(MESSAGES["opt_in_success"])
 
         # Check database
         player.refresh_from_db()
@@ -83,9 +96,8 @@ class TestOptInLogic:
         response = handle_opt_in(active_player.phone_number)
 
         # Check response
-        assert isinstance(response, TwilioSuccessResponse)
-        assert response.twiml
-        assert MESSAGES["already_opted_in"] in response.twiml
+        assert response["code"] == 200
+        assert response["twiml"] == create_twiml_response(MESSAGES["already_opted_in"])
 
         # Check database - should be unchanged
         active_player.refresh_from_db()
@@ -101,9 +113,8 @@ class TestOptInLogic:
             mock_get_or_create.side_effect = Exception("Database error")
             response = handle_opt_in(phone_number)
 
-            assert isinstance(response, TwilioErrorResponse)
-            assert response.message.startswith("Failed to opt in")
-            assert response.code == 400
+            assert response["code"] == 400
+            assert "Failed to opt in" in response["twiml"]
 
 
 @pytest.mark.django_db
@@ -115,9 +126,8 @@ class TestOptOutLogic:
         response = handle_opt_out(active_player.phone_number)
 
         # Check response
-        assert isinstance(response, TwilioSuccessResponse)
-        assert response.twiml
-        assert MESSAGES["opt_out_success"] in response.twiml
+        assert response["code"] == 200
+        assert response["twiml"] == create_twiml_response(MESSAGES["opt_out_success"])
 
         # Check database
         active_player.refresh_from_db()
@@ -129,30 +139,21 @@ class TestOptOutLogic:
         response = handle_opt_out(player.phone_number)
 
         # Check response
-        assert isinstance(response, TwilioSuccessResponse)
-        assert response.twiml
-        assert MESSAGES["opt_out_success"] in response.twiml
+        assert response["code"] == 200
+        assert response["twiml"] == create_twiml_response(MESSAGES["opt_out_success"])
 
         # Check database
         player.refresh_from_db()
         assert not player.is_active
         assert player.opted_out_at
 
-    def test_opt_out_ends_active_sessions(self, active_player, word):
+    def test_opt_out_ends_active_sessions(self, active_player, active_game_session):
         """Test that opting out ends all active game sessions."""
-        # Create some game sessions
-        session = GameSession.objects.create(
-            player=active_player,
-            word=word,
-            status="active",
-        )
-
         response = handle_opt_out(active_player.phone_number)
 
         # Check response
-        assert isinstance(response, TwilioSuccessResponse)
-        assert response.twiml
-        assert MESSAGES["opt_out_success"] in response.twiml
+        assert response["code"] == 200
+        assert response["twiml"] == create_twiml_response(MESSAGES["opt_out_success"])
 
         # Check database
         active_player.refresh_from_db()
@@ -160,9 +161,9 @@ class TestOptOutLogic:
         assert active_player.opted_out_at
 
         # Check that sessions were ended
-        session.refresh_from_db()
-        assert session.status == "timeout"
-        assert session.completed_at
+        active_game_session.refresh_from_db()
+        assert active_game_session.status == "timeout"
+        assert active_game_session.completed_at
 
     def test_opt_out_database_error(self, phone_number):
         """Test handling of database errors during opt-out."""
@@ -172,6 +173,118 @@ class TestOptOutLogic:
             mock_get_or_create.side_effect = Exception("Database error")
             response = handle_opt_out(phone_number)
 
-        assert isinstance(response, TwilioErrorResponse)
-        assert response.message.startswith("Failed to opt out")
-        assert response.code == 400
+            assert response["code"] == 400
+            assert "Failed to opt out" in response["twiml"]
+
+
+@pytest.mark.django_db
+class TestGameMessageLogic:
+    """Tests for game message handling logic."""
+
+    def test_handle_active_game_message(self, active_player, active_game_session):
+        """Test handling a message when player has an active game."""
+        with patch("charades.game.logic.handle_word_description") as mock_handle_desc:
+            mock_handle_desc.return_value = {"code": 200, "twiml": "test response"}
+            response = handle_game_message(active_player, "test description")
+
+            # Should delegate to handle_word_description
+            mock_handle_desc.assert_called_once_with(active_player, "test description")
+            assert response == {"code": 200, "twiml": "test response"}
+
+    def test_handle_language_selection(self, active_player):
+        """Test handling a valid language code."""
+        with patch("charades.game.logic.handle_language_selection") as mock_handle_lang:
+            mock_handle_lang.return_value = {"code": 200, "twiml": "test response"}
+            response = handle_game_message(active_player, "EN")
+
+            # Should delegate to handle_language_selection
+            mock_handle_lang.assert_called_once_with(active_player, "EN")
+            assert response == {"code": 200, "twiml": "test response"}
+
+    def test_handle_invalid_message(self, active_player):
+        """Test handling an invalid message (no active game, not a language code)."""
+        response = handle_game_message(active_player, "invalid")
+
+        assert response["code"] == 200
+        assert response["twiml"] == create_twiml_response(MESSAGES["how_to_play"])
+
+
+@pytest.mark.django_db
+class TestLanguageSelectionLogic:
+    """Tests for language selection logic."""
+
+    @patch("charades.game.logic.get_random_word")
+    def test_valid_language_selection(self, mock_get_word, active_player):
+        """Test selecting a valid language."""
+        mock_get_word.return_value = "test"
+        response = handle_language_selection(active_player, "EN")
+
+        assert response["code"] == 200
+        assert (
+            MESSAGES["new_game"].format(
+                language=settings.SUPPORTED_LANGUAGES["EN"],
+                word="test",
+            )
+            in response["twiml"]
+        )
+
+        # Check that a game session was created
+        session = active_player.gamesession_set.first()
+        assert session.word == "test"
+        assert session.language == "en"
+        assert session.status == "active"
+
+    def test_language_selection_error(self, active_player):
+        """Test error handling in language selection."""
+        with patch("charades.game.logic.get_random_word") as mock_get_word:
+            mock_get_word.side_effect = Exception("API error")
+            response = handle_language_selection(active_player, "EN")
+
+            assert response["code"] == 400
+            assert "Failed to start game" in response["twiml"]
+
+
+@pytest.mark.django_db
+class TestWordDescriptionLogic:
+    """Tests for word description handling logic."""
+
+    @patch("charades.game.logic.evaluate_description")
+    def test_valid_word_description(
+        self, mock_evaluate, active_player, active_game_session
+    ):
+        """Test handling a valid word description."""
+        mock_evaluate.return_value = (85, "Good job!")
+        response = handle_word_description(active_player, "test description")
+
+        assert response["code"] == 200
+        assert (
+            MESSAGES["game_complete"].format(
+                score=85,
+                feedback="Good job!",
+            )
+            in response["twiml"]
+        )
+
+        # Check that the game session was completed
+        active_game_session.refresh_from_db()
+        assert active_game_session.status == "completed"
+        assert active_game_session.score == 85
+        assert active_game_session.completed_at
+        assert active_game_session.user_description == "test description"
+        assert active_game_session.feedback == "Good job!"
+
+    def test_no_active_game(self, active_player):
+        """Test handling a description when there's no active game."""
+        response = handle_word_description(active_player, "test description")
+
+        assert response["code"] == 200
+        assert response["twiml"] == create_twiml_response(MESSAGES["no_active_game"])
+
+    def test_evaluation_error(self, active_player, active_game_session):
+        """Test error handling during description evaluation."""
+        with patch("charades.game.logic.evaluate_description") as mock_evaluate:
+            mock_evaluate.side_effect = Exception("API error")
+            response = handle_word_description(active_player, "test description")
+
+            assert response["code"] == 400
+            assert "Failed to evaluate description" in response["twiml"]
