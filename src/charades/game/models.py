@@ -91,6 +91,22 @@ class GameSession(models.Model):
         max_length=2,
         help_text="ISO 639-1 language code (e.g., 'es' for Spanish)",
     )
+    user_description = models.TextField(
+        null=True,
+        blank=True,
+        help_text="The user's description of the word",
+    )
+    score = models.IntegerField(
+        null=True,
+        blank=True,
+        validators=[MinValueValidator(0), MaxValueValidator(100)],
+        help_text="Score from 0-100 based on AI evaluation",
+    )
+    feedback = models.TextField(
+        null=True,
+        blank=True,
+        help_text="AI-generated feedback on the user's description",
+    )
     status = models.CharField(
         max_length=10,
         choices=STATUS_CHOICES,
@@ -106,12 +122,6 @@ class GameSession(models.Model):
         blank=True,
         help_text="When the game session was completed or timed out",
     )
-    score = models.IntegerField(
-        null=True,
-        blank=True,
-        validators=[MinValueValidator(0), MaxValueValidator(100)],
-        help_text="Score from 0-100 based on AI evaluation",
-    )
 
     def __str__(self) -> str:
         return f"{self.player} - {self.word} ({self.status})"
@@ -119,11 +129,21 @@ class GameSession(models.Model):
     def complete(
         self,
         score: int,
+        description: str,
+        feedback: str,
     ) -> None:
-        """Mark the game session as completed with a score."""
+        """Mark the game session as completed with a score.
+
+        Args:
+            score: Score from 0-100 based on AI evaluation
+            description: The user's description of the word
+            feedback: AI-generated feedback on the description
+        """
         self.status = "completed"
         self.completed_at = timezone.now()
         self.score = score
+        self.user_description = description
+        self.feedback = feedback
         self.save()
 
     def timeout(self) -> None:

@@ -192,7 +192,11 @@ def handle_word_description(
             )
 
             # Complete the session with score
-            session.complete(score=score)
+            session.complete(
+                score=score,
+                description=description,
+                feedback=feedback,
+            )
 
             return TwilioSuccessResponse(
                 twiml=create_twiml_response(
