@@ -10,6 +10,10 @@ pre-commit:
 pyright:
     uv run pyright
 
+# Run pytest unit tests
+pytest:
+    uv run pytest test
+
 # Run Django development server
 django-runserver:
     uv run python manage.py runserver
