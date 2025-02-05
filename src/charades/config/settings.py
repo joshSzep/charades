@@ -43,6 +43,9 @@ TWILIO_PHONE_NUMBER = os.getenv("TWILIO_PHONE_NUMBER", "")
 # OpenAI settings (for future use)
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
 
+# Anthropic settings
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "")
+
 # Game settings
 SUPPORTED_LANGUAGES = {
     "BN": "Bengali",
