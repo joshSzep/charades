@@ -120,8 +120,8 @@ Here is a breakdown of **detailed tasks** for each step of the high-level implem
 # **Phase 1: Text-Based Gameplay via SMS**
 
 ### **Step 1: Set up a Flask/Django backend to handle SMS messages**
-- [ ] Initialize a new Flask/Django project with a structured directory.
-- [ ] Configure environment variables for API keys (Twilio, OpenAI GPT, database credentials).
+- [-] Initialize a new Flask/Django project with a structured directory.
+- [-] Configure environment variables for API keys (Twilio, OpenAI GPT, database credentials).
 - [ ] Implement a RESTful API with endpoints for game session management.
 - [ ] Establish a session management system for tracking player interactions.
 - [ ] Deploy a basic server instance on AWS/GCP for initial testing.
