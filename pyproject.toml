@@ -16,25 +16,30 @@ dependencies = [
 charades = "charades:main"
 
 [project.optional-dependencies]
-dev = ["black>=24.1.1", "ruff>=0.2.1", "pyright>=1.1.349", "pytest>=8.3.4"]
+dev = [
+    "ruff>=0.2.1",
+    "pyright>=1.1.349",
+    "pytest>=8.3.4",
+    "pre-commit>=4.1.0",
+    "isort>=6.0.0",
+]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.black]
-line-length = 88
-target-version = ["py313"]
-
-[tool.isort]
-profile = "black"
-line_length = 88
-force_single_line = true
-known_first_party = ["charades"]
-
 [tool.ruff]
 line-length = 88
 target-version = "py313"
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
+
+[tool.ruff.lint]
+select = ["E", "F"]
 
 [tool.ruff.flake8-quotes]
 docstring-quotes = "double"

@@ -1,8 +1,9 @@
 import os
 
 import django
-from django.test import Client
 import pytest
+from django.test import Client
+
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "charades.config.settings")
 django.setup()
