@@ -1,6 +1,8 @@
 """Utility functions for the game module."""
 
 from twilio.twiml.messaging_response import MessagingResponse
+from twilio.twiml.voice_response import VoiceResponse
+from twilio.twiml.voice_response import Gather
 
 
 def create_twiml_response(message: str) -> str:
@@ -14,6 +16,42 @@ def create_twiml_response(message: str) -> str:
     """
     response = MessagingResponse()
     response.message(message)
+    return str(response)
+
+
+def create_voice_response(
+    message: str,
+    gather_speech: bool = False,
+) -> str:
+    """Create a TwiML voice response.
+
+    Args:
+        message: The message to speak to the user
+        gather_speech: Whether to gather speech input after speaking
+
+    Returns:
+        str: The TwiML response as a string
+    """
+    response = VoiceResponse()
+
+    # Add brief pause for better speech flow
+    message = message.replace("\n", ". ")
+
+    if gather_speech:
+        gather = Gather(
+            input="speech",
+            timeout=5,
+            action="/api/webhooks/twilio/voice/gather",
+            method="POST",
+        )
+        gather.say(message)
+        response.append(gather)
+
+        # If no input received, redirect back to voice endpoint
+        response.redirect("/api/webhooks/twilio/voice")
+    else:
+        response.say(message)
+
     return str(response)
 
 
@@ -74,5 +112,26 @@ MESSAGES = {
     "invalid_language": (
         "Sorry, that language code isn't supported yet. "
         "Try: EN (English) or KO (Korean)"
+    ),
+}
+
+VOICE_MESSAGES = {
+    "welcome": (
+        "Welcome to Lang Gang Charades! "
+        "Say a language code to start. For example, say EN for English, "
+        "or KO for Korean."
+    ),
+    "not_understood": ("Sorry, I didn't catch that. Please try again."),
+    "new_game": (
+        "Let's play in {language}! "
+        "Your word is: {word}. "
+        "Please describe this word in {language}. "
+        "I'll evaluate your description!"
+    ),
+    "no_input": ("I didn't hear anything. Please try again."),
+    "game_complete": (
+        "Your score is {score} out of 100. "
+        "{feedback} "
+        "Say a language code to play again!"
     ),
 }

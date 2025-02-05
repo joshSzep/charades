@@ -78,3 +78,44 @@ class PlayerCommandSchema(Schema):
 
     phone_number: str
     command: str
+
+
+class TwilioIncomingVoiceSchema(Schema):
+    """Schema for incoming voice webhook from Twilio."""
+
+    # Core call fields
+    CallSid: str
+    AccountSid: str
+    From: str
+    To: str
+
+    # Speech recognition results
+    SpeechResult: str | None = None
+    Confidence: float | None = None
+
+    # Call status
+    CallStatus: Literal[
+        "queued",
+        "ringing",
+        "in-progress",
+        "completed",
+        "busy",
+        "failed",
+        "no-answer",
+        "canceled",
+    ]
+
+    # Geographic data (if available)
+    FromCity: str | None = None
+    FromState: str | None = None
+    FromZip: str | None = None
+    FromCountry: str | None = None
+    ToCity: str | None = None
+    ToState: str | None = None
+    ToZip: str | None = None
+    ToCountry: str | None = None
+
+    # Additional fields
+    ApiVersion: str | None = None
+    Direction: str | None = None
+    ForwardedFrom: str | None = None
