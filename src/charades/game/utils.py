@@ -118,20 +118,35 @@ MESSAGES = {
 VOICE_MESSAGES = {
     "welcome": (
         "Welcome to Lang Gang Charades! "
-        "Say a language code to start. For example, say EN for English, "
-        "or KO for Korean."
+        "I'll give you a word, and you describe it in your chosen language. "
+        "To begin, say a language code like English or Korean."
     ),
-    "not_understood": ("Sorry, I didn't catch that. Please try again."),
+    "not_understood": (
+        "I didn't catch that. Please say a language name like English or Korean."
+    ),
     "new_game": (
-        "Let's play in {language}! "
-        "Your word is: {word}. "
+        "Great! Let's play in {language}. "
+        "Your word is {word}. "
         "Please describe this word in {language}. "
-        "I'll evaluate your description!"
+        "Take your time, I'll listen to your description."
     ),
-    "no_input": ("I didn't hear anything. Please try again."),
+    "no_input": ("I didn't hear anything. Please try speaking again."),
     "game_complete": (
+        "Thanks for your description! "
         "Your score is {score} out of 100. "
         "{feedback} "
-        "Say a language code to play again!"
+        "Would you like to play again? Just say a language like English or Korean."
+    ),
+    "language_not_supported": (
+        "Sorry, I don't support that language yet. "
+        "Please choose from: English, Korean, Spanish, French, German, "
+        "Italian, Japanese, Portuguese, Russian, Bengali, Persian, or Chinese."
+    ),
+    "how_to_play": (
+        "Here's how to play Lang Gang Charades: "
+        "First, choose your language by saying English, Korean, Spanish, or others. "
+        "Then, I'll give you a word to describe in that language. "
+        "Finally, speak your description and I'll evaluate it. "
+        "Ready? Say a language to begin!"
     ),
 }

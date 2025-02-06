@@ -1,8 +1,14 @@
+import logging
 from urllib.parse import parse_qs
+from django.conf import settings
 from django.http import HttpRequest
 from ninja import NinjaAPI
 
-from charades.game.logic import handle_player_command
+from charades.game.logic import (
+    handle_player_command,
+    handle_word_description,
+    get_random_word,
+)
 from charades.game.renderers import TwiMLRenderer
 from charades.game.schemas import TwilioIncomingMessageSchema
 from charades.game.schemas import TwilioMessageStatusSchema
@@ -11,6 +17,9 @@ from charades.game.schemas import TwilioIncomingVoiceSchema
 from charades.game.utils import create_twiml_response
 from charades.game.utils import create_voice_response
 from charades.game.utils import VOICE_MESSAGES
+from charades.game.models import Player
+
+logger = logging.getLogger(__name__)
 
 api = NinjaAPI(
     renderer=TwiMLRenderer(),
@@ -216,45 +225,13 @@ def handle_voice_gather(
     3. Routes to appropriate game logic
     4. Returns TwiML response with next prompt
     """
-    # Parse the URL-encoded payload from request.body
+    # Parse the URL-encoded payload
     body_str = request.body.decode("utf-8")
     params = parse_qs(body_str)
 
-    # Convert the parsed params into our schema format
-    schema_data = {
-        "CallSid": params["CallSid"][0],
-        "AccountSid": params["AccountSid"][0],
-        "From": params["From"][0],
-        "To": params["To"][0],
-        "CallStatus": params["CallStatus"][0],
-        "SpeechResult": params.get("SpeechResult", [None])[0],
-        "Confidence": float(params["Confidence"][0])
-        if "Confidence" in params
-        else None,
-        # Optional fields
-        "FromCity": params.get("FromCity", [None])[0],
-        "FromState": params.get("FromState", [None])[0],
-        "FromZip": params.get("FromZip", [None])[0],
-        "FromCountry": params.get("FromCountry", [None])[0],
-        "ToCity": params.get("ToCity", [None])[0],
-        "ToState": params.get("ToState", [None])[0],
-        "ToZip": params.get("ToZip", [None])[0],
-        "ToCountry": params.get("ToCountry", [None])[0],
-        "ApiVersion": params.get("ApiVersion", [None])[0],
-        "Direction": params.get("Direction", [None])[0],
-        "ForwardedFrom": params.get("ForwardedFrom", [None])[0],
-    }
-
-    # Create and validate the schema
-    try:
-        call = TwilioIncomingVoiceSchema(**schema_data)
-    except ValueError as e:
-        return {
-            "twiml": create_voice_response(f"Invalid webhook payload: {str(e)}"),
-            "code": 400,
-        }
-
-    if not call.SpeechResult:
+    # Get the speech result
+    speech_result = params.get("SpeechResult", [None])[0]
+    if not speech_result:
         return {
             "twiml": create_voice_response(
                 VOICE_MESSAGES["no_input"],
@@ -263,21 +240,108 @@ def handle_voice_gather(
             "code": 200,
         }
 
-    # Process the command through existing game logic
-    result = handle_player_command(call.From, call.SpeechResult.lower())
+    # Get caller's phone number
+    phone_number = params.get("From", [None])[0]
+    if not phone_number:
+        return {
+            "twiml": create_voice_response(
+                VOICE_MESSAGES["error_generic"],
+                gather_speech=False,
+            ),
+            "code": 400,
+        }
 
-    # Convert message response to voice response
-    message = result["twiml"]
-    if "message" in message:
-        message = message.split(">")[1].split("<")[0]  # Extract message from TwiML
-
-    return {
-        "twiml": create_voice_response(
-            message,
-            gather_speech=True,
-        ),
-        "code": result["code"],
+    # Convert speech to language code
+    speech_lower = speech_result.lower()
+    speech_lower = speech_lower.strip()
+    speech_lower = speech_lower.strip(".")
+    language_map = {
+        "english": "EN",
+        "korean": "KO",
+        "spanish": "ES",
+        "french": "FR",
+        "german": "DE",
+        "italian": "IT",
+        "japanese": "JA",
+        "portuguese": "PT",
+        "russian": "RU",
+        "bengali": "BN",
+        "persian": "FA",
+        "chinese": "ZH",
     }
+    logger.critical(f"speech_lower: {speech_lower}")
+
+    language_code = language_map.get(speech_lower)
+
+    # Get or create player
+    try:
+        player, _ = Player.get_or_create_player(phone_number)
+    except Exception as _:
+        return {
+            "twiml": create_voice_response(
+                VOICE_MESSAGES["error_generic"],
+                gather_speech=False,
+            ),
+            "code": 400,
+        }
+
+    # Check for active game
+    active_session = player.gamesession_set.filter(status="active").first()
+
+    if active_session:
+        # Handle word description
+        result = handle_word_description(player, speech_result)
+        # Convert SMS response to voice response
+        message = result["twiml"].replace("Score:", "").replace("\n", ". ")
+        return {
+            "twiml": create_voice_response(message, gather_speech=True),
+            "code": result["code"],
+        }
+    elif language_code:
+        # Get or create player
+        try:
+            player, _ = Player.get_or_create_player(phone_number)
+        except Exception as _:
+            return {
+                "twiml": create_voice_response(
+                    VOICE_MESSAGES["error_generic"],
+                    gather_speech=False,
+                ),
+                "code": 400,
+            }
+
+        # End any existing active sessions
+        player.end_active_sessions()
+
+        # Get a random word in the selected language
+        word = get_random_word(language_code)
+
+        # Create new game session
+        _ = player.gamesession_set.create(
+            word=word,
+            language=language_code.lower(),
+        )
+
+        # Return voice response with the word
+        return {
+            "twiml": create_voice_response(
+                VOICE_MESSAGES["new_game"].format(
+                    language=settings.SUPPORTED_LANGUAGES[language_code.upper()],
+                    word=word,
+                ),
+                gather_speech=True,
+            ),
+            "code": 200,
+        }
+    else:
+        # Neither active game nor valid language - provide guidance
+        return {
+            "twiml": create_voice_response(
+                VOICE_MESSAGES["how_to_play"],
+                gather_speech=True,
+            ),
+            "code": 200,
+        }
 
 
 @api.post(
